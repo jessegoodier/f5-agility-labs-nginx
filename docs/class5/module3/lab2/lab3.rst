@@ -1,4 +1,4 @@
-Step 8 - Update the Docker image with the Threat Campaign package
+Step 6 - Build your NAP (NGINX App Protect) Docker image
 #################################################################
 
 In this lab, we will install the package Threat Campaign into a new Docker image.
@@ -106,7 +106,7 @@ In order to install this package, we need to update our ``Dockerfile``. I create
 
    #. RDP to the ``Jumphost`` (user / user)
    #. Open ``Postman`` and select the collection ``NAP - Threat Campaign``
-   #. Run the 2 calls. They will trigger 2 different Threat Campaign rules.
+   #. Run the 2 calls with ``docker`` in the name. They will trigger 2 different Threat Campaign rules.
    #. In the next lab, we will check the logs in Kibana.
 
 

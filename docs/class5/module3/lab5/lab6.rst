@@ -1,22 +1,22 @@
 Step 10 - Deploy NAP with a CI/CD toolchain
 ###########################################
 
-In this lab, we will deploy deploy NAP with a CI/CD pipeline. NAP is tied to the app, so when DevOps commits a new app (or a new version), the CI/CD pipeline has to deploy a new NAP component in front. In order to avoid repeating what we did previously, we will use a Signature package update as a trigger.
+In this lab, we will deploy a Docker NAP container with a CI/CD pipeline. NAP is tied to the app, so when DevOps commits a new app (or a new version), the CI/CD pipeline will to deploy a new NAP container in front. In order to avoid repeating what we did previously, we will use a Signature package update as a trigger.
 
-.. note:: When a new signature package is available, the CI/CD pipeline will build a new version of the Docker image and run it in front of Arcadia Application
+.. note:: When a new signature package is available, the CI/CD pipeline will build a new version of the Docker image and run it in front of the Arcadia Application.
 
 **This is the workflow we will run (the steps to run are later in this page)**
 
     #. Check if a new Signature Package is available
-    #. Simulate a Commit in GitLab (Goal is to simulate a full automated process checking Signature Package date every day)
+    #. Simulate a Commit in GitLab (goal is to simulate a full automated process checking signature package every day)
     #. This commit triggers a webhook in Gitlab CI
-    #. Gitlab CI runs the pipeline
+    #. Gitlab CI runs the pipeline:
     
         #. Build a new Docker NAP image with a new tag ``date of the signature package``
         #. Destroy the previous running NAP container
-        #. Run a new NAP container with this new Signature Package
+        #. Run a new NAP container with the new Signature Package
 
-.. note:: Goal of this lab is not to learn how to do it, but understand how I did it.
+.. note:: The goal of this lab is not understand what is possible. Feel free to browse through GitLab to see how it all works.
 
 **Check the Gitlab CI file**
 
@@ -63,20 +63,20 @@ In this lab, we will deploy deploy NAP with a CI/CD pipeline. NAP is tied to the
 
 Steps:
 
-    #.  RDP to the Jumphost and open ``Edge Browser``
-    #.  Open ``Gitlab``
+    #.  On the jumphost, open Firefox > ``Gitlab``
 
-        #. If Gitlab is not available (502 error), restart the GitLab Docker container. SSH to the GitLab VM and run ``docker restart gitlab`` 
-    #.  In GitLab, open ``NGINX App Protect / nap-docker-signature`` project
+        #. If Gitlab is not available (502 error), restart the GitLab Docker container. SSH to the GitLab VM and run ``sudo docker restart gitlab`` 
+    #.  In GitLab, open ``Projects>NGINX App Protect / nap-docker-signature`` project
 
         .. image:: ../pictures/lab6/gitlab_project_updated.png
            :align: center
            :scale: 50%
 
-    #.  SSH from Jumpbox commandline ``ssh ubuntu@10.1.1.8`` (or WebSSH) to ``CICD server (runner, Terraform, Ansible)``
+    #.  SSH ``CICD server (runner, Terraform, Ansible)``
 
-        #. Run this command in order to determine the latest Signature Package date: ``yum info app-protect-attack-signatures``
-        #. You may notice the version date. In my case, when I write this lab ``2020.06.30`` was the most recent version of the signatures package. We will use this date as a Docker tag, but this will be done automatically by the CI/CD pipeline.
+        #. Run this command in order to determine the latest Signature Package date: ``sudo yum --showduplicates list app-protect-attack-signatures`` 
+        or for ubuntu: ``sudo apt-cache policy app-protect-attack-signatures|grep 2021``
+        #. You will see all versions published. In my case, it is ``2021.07.13`` (2021.07.13-1.el7.ngx). We will use this date as a Docker tag, but this will be done automatically by the CI/CD pipeline.
 
         .. image:: ../pictures/lab6/yum-date.png
            :align: center
@@ -90,7 +90,7 @@ Steps:
 Steps :
 
     #. In GitLab, click on ``Repository`` and ``Tags`` in the left menu
-    #. Create a new tag and give it a name like ``Sig-<version date>`` where ideally ``<version_date>`` should be replaced by the package version information found in the result of the ``yum info`` step above. But it does not matter, you can put anything you want in this tag.
+    #. Create a new tag and give it a name like ``Sig-2021.07.13`` where ideally ``<version_date>`` should be replaced by the package version information found in the result of the ``yum info`` step above. But it does not matter, you can put anything you want in this tag.
     #. Click ``Create tag``
     #. At this moment, the ``Gitlab CI`` pipeline starts
     #. In Gitlab, in the ``signature-update`` repository, click ``CI / CD`` > ``Pipelines``
@@ -104,19 +104,20 @@ Steps :
           :align: center 
     
     #. Check if the new image created and pushed by the pipeline is available in the Docker Registry.
-        #. In ``Edge Browser`` open bookmark ``Docker Registry UI`` which is inside the ``extras`` bookmark folder
+        #. In Firefox open bookmark ``Docker Registry UI`` 
         #. Click on ``App Protect`` Repository
-        #. You can see your new image with the tag ``2020.06.30`` - or any other tag based on the latest package date.
+        #. You can see your new image with the tag ``2021.07.13`` - or any other tag based on the latest package date.
 
         .. image:: ../pictures/lab6/registry-ui.png
            :align: center 
 
-    #. Connect in SSH from Jumpbox commandline ``ssh ubuntu@10.1.1.12`` to the Docker App Protect + Docker repo VM, and check the signature package date running ``docker logs app-protect``
+    #. SSH to the Docker App Protect VM and check the signature package date running ``docker logs app-protect --follow``
     
     .. code-block:: bash
        
        2021/02/24 13:59:24 [notice] 13#13: APP_PROTECT { "event": "configuration_load_success", "software_version": "3.332.0", "user_signatures_packages":[],"attack_signatures_package":{"revision_datetime":"2021-01-28T20:04:14Z","version":"2021.01.28"},"completed_successfully":true,"threat_campaigns_package":{}}
 
-
+    #. You can create some traffic to the new container with Firefox>Arcadia Links>Arcadia NAP Docker favorite
+    
 .. note:: Congratulations, you ran a CI/CD pipeline with a GitLab CI.
 

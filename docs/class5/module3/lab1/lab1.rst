@@ -1,11 +1,12 @@
 Step 6 - Build your first NAP (NGINX App Protect) Docker image
 ##############################################################
 
-In this lab, we will build manually our first NAP Docker image via command line.
+In this lab, we will build the NAP Docker image via command line.
 
 **Follow the step below to build the Docker image:**
 
-   #. SSH from jumphost commandline ``ssh ubuntu@10.1.1.12`` (or WebSSH and ``cd /home/ubuntu/``) to Docker App Protect + Docker repo VM
+   #. SSH/vscode/webshell to the Docker App Protect + Docker repo VM
+   #. Change direcotry to ``cd /home/ubuntu/lab-files``
    #. Run the command ``docker build -t app-protect:nosig .`` <-- Be careful, there is a "." (dot) at the end of the command
    #. Wait until you see the message: ``Successfully tagged app-protect:nosig``
 

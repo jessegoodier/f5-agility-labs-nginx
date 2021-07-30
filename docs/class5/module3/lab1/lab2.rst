@@ -1,11 +1,19 @@
-Step 7 - Update the Docker image with the latest WAF signatures
-###############################################################
+Step 6 - Build your first NAP (NGINX App Protect) Docker image
+##############################################################
 
-In this lab, we will update the signature package in the Docker image.
+In this lab, we will build the NAP Docker image via command line.
 
-.. warning:: There are several ways to update the signatures. All of them have pros and cons. In this lab, I decided to create a new Docker image with the new signature package to preserve immutability. And then destroy and run a new Docker container from this new image in front of Arcadia App.
+**Follow the step below to build the Docker image:**
 
-The signatures are provided by F5 with an RPM package. The best way to update the image is to build a new image from a new Dockerfile referring to this signature package (and change the image tag). We will use the Dockerfile below:
+   #. SSH/vscode/webshell to the Docker App Protect + Docker repo VM
+   #. Change direcotry to ``cd /home/ubuntu/lab-files``
+   #. Run the command ``docker build --tag app-protect .`` <-- Be careful, there is a "." (dot) at the end of the command
+
+.. note:: By default, when you run the docker build command, it looks for a file named ``Dockerfile`` in the current direcotry. To target a diffrent file, pass -f flag.
+
+   #. Wait until you see the message: ``Successfully tagged app-protect:latest``
+
+.. note:: The signatures are provided by F5 with an RPM package. The best way to update the image is to build a new image and rfrom a new Dockerfile referring to this signature package (and change the image tag). We will use the Dockerfile below:
 
 .. code-block:: bash
 
