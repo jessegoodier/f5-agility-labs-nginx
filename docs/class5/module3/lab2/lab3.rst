@@ -14,9 +14,9 @@ Unlike ``signatures``, Threat Campaign provides with ``ruleset``. A signature us
 For instance, if we notice a hacker managed to enter into our Struts2 system, we will do forensics and analyse the packet that used the breach. Then, this team creates the ``rule`` for this request.
 A ``rule`` **can** contains all the HTTP L7 payload (headers, cookies, payload ...)
 
-.. note :: Unlike signatures that can generate False Positives due to low accuracy patterns, Threat Campaign is very accurate and reduces drastically the False Positives. 
+.. note :: Unlike signatures that can generate False Positives due to low accuracy patterns, Threat Campaigns are very accurate and nearly eliminates any False Positives.
 
-.. note :: NAP provides with high accuracy Signatures + Threat Campaign ruleset. The best of bread to reduce FP.
+.. note :: NAP provides with high accuracy Signatures + Threat Campaign ruleset. The best of breed to reduce False Positives.
 
 
 Threat Campaign package is available with the ``app-protect-signatures-7.repo`` repository. It is provided with the NAP subscription.
@@ -45,15 +45,15 @@ In order to install this package, we need to update our ``Dockerfile``. I create
       && rm -rf /var/cache/yum \
       && rm -rf /etc/ssl/nginx
 
-   # Forward request logs to Docker log collector
-   #RUN ln -sf /dev/stdout /var/log/nginx/access.log \
-   #    && ln -sf /dev/stderr /var/log/nginx/error.log
+   # Forward request logs to Docker log collector:
+   RUN ln -sf /dev/stdout /var/log/nginx/access.log \
+      && ln -sf /dev/stderr /var/log/nginx/error.log
 
-   # Copy configuration files
-   COPY nginx.conf log-default.json /etc/nginx/
-   COPY entrypoint.sh  ./
+   # Copy configuration files:
+   COPY nginx.conf custom_log_format.json /etc/nginx/
+   COPY entrypoint.sh  /root/
 
-   CMD ["sh", "/entrypoint.sh"]
+   CMD ["sh", "/root/entrypoint.sh"]
 
 
 .. note:: You may notice one more package versus the previous Dockerfile in Step 4. I added the package installation ``app-protect-threat-campaigns``
@@ -62,49 +62,29 @@ In order to install this package, we need to update our ``Dockerfile``. I create
 **Follow the steps below to build the new Docker image:**
 
    #. SSH to Docker App Protect + Docker repo VM
-   #. Run the command ``docker build -t app-protect:tc -f Dockerfile-sig-tc .`` <-- Be careful, there is a "." (dot) at the end of the command
-   #. Wait until you see the message: ``Successfully tagged app-protect:tc``
+   #. Run the command ``docker build --tag app-protect -f Dockerfile-sig-tc .`` <-- Be careful, there is a "." (dot) at the end of the command
+   #. Wait until you see the message: ``Successfully tagged app-protect:latest``
 
 .. note:: Please take time to understand what we ran. You may notice 2 changes. We ran the build with a new Dockerfile ``Dockerfile-sig-tc`` and with a new tag ``tc``. You can choose another tag like ``tcdate`` where date is the date of today. We don't know yet the date of the TC package ruleset.
 
 
-**Destroy the previous running NAP container and run a new one based on the new image (tag tc)**
+**Stop the previous running NAP container and run a new one based on the new image**
 
-   1. Check if the new app-protect Docker image is available locally by running ``docker images``. You will notice the new image with a tag of ``tc``.
+   1. If the container is running interactively, stop it with <ctrl-c>. Otherwise, kill it with ``docker rm -f app-protect``
 
-      .. image:: ../pictures/lab3/docker_images.png
-         :align: center
+   2. Run a new container with this image  ``docker run --interactive --tty --rm --name app-protect -p 80:80 --volume /home/ubuntu/lab-files/nginx.conf:/etc/nginx/nginx.conf app-protect:latest``
 
-|
+.. note:: The container takes about 45 seconds to start, wait for a message "event": "waf_connected" before continuing.
 
-   2. Destroy the existing and running NAP container ``docker rm -f app-protect``
-   3. Run a new container with this image ``docker run -dit --name app-protect -p 80:80 -v /home/ubuntu/nginx.conf:/etc/nginx/nginx.conf app-protect:tc``
-
-      .. warning :: If you decided to change the tag ``tc`` by another tag, change your command line accordingly
-
-   4. Check that the Docker container is running ``docker ps``
-
-      .. image:: ../pictures/lab3/docker_run.png
-         :align: center
-
-|
-
-   5. Check the Threat Campaign ruleset date included in the new Docker container ``docker exec -it app-protect cat /var/log/nginx/error.log``
-
-      .. note :: You can notice in one line of log, you get the ``Signature date`` and the ``Threat Campaign date``.
+   3. Check the Threat Campaign ruleset date included in the new Docker container in the running logs by looking for  ``threat_campaigns_package``
 
       .. code-block:: 
       
-         2020/07/01 17:03:14 [notice] 12#12: APP_PROTECT { "event": "configuration_load_success", "software_version": "3.74.0", 
-         "attack_signatures_package":{"revision_datetime":"2020-06-28T15:30:59Z","version":"2020.06.28"},"completed_successfully":true,
-         "threat_campaigns_package":{"revision_datetime":"2020-06-25T19:13:36Z","version":"2020.06.25"}}
-
-
-
+         2021/08/02 14:15:52 [notice] 13#13: APP_PROTECT { "event": "configuration_load_success", "software_version": "3.583.0", "user_signatures_packages":[],"attack_signatures_package":{"revision_datetime":"2021-07-13T09:45:23Z","version":"2021.07.13"},"completed_successfully":true,"threat_campaigns_package":{"revision_datetime":"2021-07-13T13:48:30Z","version":"2021.07.13"}}
 
 **Simulate a Threat Campaign attack**
 
-   #. RDP to the ``Jumphost`` (user / user)
+   #. RDP to the ``jumphost`` (user / user)
    #. Open ``Postman`` and select the collection ``NAP - Threat Campaign``
    #. Run the 2 calls with ``docker`` in the name. They will trigger 2 different Threat Campaign rules.
    #. In the next lab, we will check the logs in Kibana.

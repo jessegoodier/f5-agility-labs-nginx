@@ -10,18 +10,18 @@ Use a custom WAF policy and assign it per location
 
 Steps:
 
-    #.  SSH to the Docker App Protect + Docker repo VM
-    #.  In the ``/home/ubuntu`` directory, create a new folder ``policy-adv``
+    #.  SSH to the Docker App Protect + Docker repo VM (feel free to use vscode on jump host if you find it easier to use than vim)
+    #.  In the ``/home/ubuntu/lab-files`` directory, create a new folder ``arcadia-waf-policy``
 
         .. code-block:: bash
 
-            mkdir policy-adv
+            mkdir arcadia-waf-policy
 
     #.  Create a new policy file named ``policy_base.json`` and paste the content below
         
         .. code-block:: bash
 
-            vi ./policy-adv/policy_base.json
+            vi ./arcadia-waf-policy/policy_base.json
 
         .. code-block:: js
            :caption: policy_base.json
@@ -44,7 +44,7 @@ Steps:
 
         .. code-block:: bash
 
-            vi ./policy-adv/policy_mongo_linux_JSON.json
+            vi ./arcadia-waf-policy/policy_mongo_linux_JSON.json
 
         .. code-block:: js
            :caption: policy_mongo_linux_JSON.json
@@ -158,11 +158,11 @@ Steps:
         .. note:: you can notice the difference between the ``base`` and the ``advanced`` policy.
 
 
-    #.  Now, create a new ``nginx.conf`` in the ``policy-adv`` folder. Do not overwrite the existing ``/etc/nginx/nginx.conf`` file, we need it for the next labs.
+    #.  Now, create a new ``nginx.conf`` in the ``arcadia-waf-policy`` folder.
 
         .. code-block:: bash
 
-            vi ./policy-adv/nginx.conf
+            vi ./arcadia-waf-policy/nginx.conf
 
         .. code-block:: nginx
             :emphasize-lines: 32,40,48,56
@@ -199,7 +199,7 @@ Steps:
                         client_max_body_size 0;
                         default_type text/html;
                         app_protect_policy_file "/etc/nginx/policy/policy_base.json";
-                        proxy_pass http://k8s.arcadia-finance.io:30274$request_uri;
+                        proxy_pass http://k8s.arcadia-finance.io:30511$request_uri;
                     }
                     location /files {
                         resolver 10.1.1.8:5353;
@@ -207,7 +207,7 @@ Steps:
                         client_max_body_size 0;
                         default_type text/html;
                         app_protect_policy_file "/etc/nginx/policy/policy_mongo_linux_JSON.json";
-                        proxy_pass http://k8s.arcadia-finance.io:30274$request_uri;
+                        proxy_pass http://k8s.arcadia-finance.io:30511$request_uri;
                     }
                     location /api {
                         resolver 10.1.1.8:5353;
@@ -215,7 +215,7 @@ Steps:
                         client_max_body_size 0;
                         default_type text/html;
                         app_protect_policy_file "/etc/nginx/policy/policy_mongo_linux_JSON.json";
-                        proxy_pass http://k8s.arcadia-finance.io:30274$request_uri;
+                        proxy_pass http://k8s.arcadia-finance.io:30511$request_uri;
                     }
                     location /app3 {
                         resolver 10.1.1.8:5353;
@@ -223,7 +223,7 @@ Steps:
                         client_max_body_size 0;
                         default_type text/html;
                         app_protect_policy_file "/etc/nginx/policy/policy_mongo_linux_JSON.json";
-                        proxy_pass http://k8s.arcadia-finance.io:30274$request_uri;
+                        proxy_pass http://k8s.arcadia-finance.io:30511$request_uri;
                     }
 
                 }
@@ -234,18 +234,15 @@ Steps:
         .. code-block:: bash
 
             docker rm -f app-protect
-            docker run -dit --name app-protect -p 80:80 -v /home/ubuntu/policy-adv/nginx.conf:/etc/nginx/nginx.conf -v /home/ubuntu/policy-adv/policy_base.json:/etc/nginx/policy/policy_base.json -v /home/ubuntu/policy-adv/policy_mongo_linux_JSON.json:/etc/nginx/policy/policy_mongo_linux_JSON.json  app-protect:20200316
+            docker run --interactive --tty --rm --name app-protect -p 80:80 \
+                -v /home/ubuntu/lab-files/arcadia-waf-policy/nginx.conf:/etc/nginx/nginx.conf \
+                -v /home/ubuntu/lab-files/arcadia-waf-policy/policy_base.json:/etc/nginx/policy/policy_base.json \
+                -v /home/ubuntu/lab-files/arcadia-waf-policy/policy_mongo_linux_JSON.json:/etc/nginx/policy/policy_mongo_linux_JSON.json \
+                app-protect:latest
 
-    #.  Check that the ``app-protect:20200316`` container is running 
+    #.  Wait for the container to start, you should see: ``APP_PROTECT { "event": "waf_connected"`` in the output.
 
-        .. code-block:: bash
-
-            docker ps
-
-        .. image:: ../pictures/lab5/docker-ps.png
-           :align: center
-
-    #.  RDP to the Jumhost as ``user:user`` and click on bookmark ``Arcadia NAP Docker`` Click Login and use matt:ilovef5
+    #.  RDP to the Jumhost as ``user:user`` and click on bookmark ``Arcadia Links>Arcadia NAP Docker`` Click Login and use matt:ilovef5
 
         .. image:: ../pictures/lab5/arcadia-adv.png
            :align: center
@@ -263,7 +260,7 @@ Steps:
 Use External References to make your policy dynamic
 ***************************************************
 
-External references in policy are defined as any code blocks that can be used as part of the policy without being explicitly pasted within the policy file. This means that you can have a set of pre-defined configurations for parts of the policy, and you can incorporate them as part of the policy by simply referencing them. This would save a lot of overhead having to concentrate everything into a single policy file.
+External references in policy are defined as any code blocks that can be used as part of the policy without being explicitly pasted within the policy file. This means that you can have a set of pre-defined configurations for parts of the policy, and you can incorporate them as part of the policy by simply referencing them. This reduces the complexity of having to concentrate everything into a single policy file.
 
 A perfect use case for external references is when you wish to build a dynamic policy that depends on moving parts. You can have code create and populate specific files with the configuration relevant to your policy, and then compile the policy to include the latest version of these files, ensuring that your policy is always up-to-date when it comes to a constantly changing environment.
 
@@ -271,7 +268,7 @@ A perfect use case for external references is when you wish to build a dynamic p
 
 In this lab, we will create a ``custom blocking page`` and host this page in Gitlab. 
 
-.. note :: In this configuration, we are completely satisfied with the basic base policy we created previously ``/policy-adv/policy_base.json``, and we wish to use it as is. However, we wish to define a custom response page using an external file located on an HTTP web server (Gitlab). The external reference file contains our custom response page configuration.
+.. note :: In this configuration, we are completely satisfied with the basic base policy we created previously ``/arcadia-waf-policy/policy_base.json``, and we wish to use it as is. However, we wish to define a custom response page using an external file located on an HTTP web server (Gitlab). The external reference file contains our custom response page configuration.
 
 As a reminder, this is the base policy we created:
 
@@ -293,7 +290,7 @@ As a reminder, this is the base policy we created:
 
 Steps :
 
-#.  RDP to ``Jumphost`` and connect to ``GitLab`` (root / F5twister$)
+#.  RDP to ``jump host`` and connect to ``GitLab`` (root / F5twister$)
 #.  Click on the project named ``NGINX App Protect / nap-reference-blocking-page``
 
     .. image:: ../pictures/lab5/gitlab-1.png
@@ -323,13 +320,15 @@ Steps :
 
     .. code-block:: bash
 
+            <ctrl-c> 
+            or
             docker rm -f app-protect
 
 #.  Modify the base policy created previously
 
     .. code-block:: bash
 
-       vi ./policy-adv/policy_base.json
+       vi ./arcadia-waf-policy/policy_base.json
 
 #.  Modify the JSON as below
 
@@ -347,19 +346,19 @@ Steps :
 
     .. note :: You can notice the reference to the TXT file in Gitlab
 
-#.  Run a new docker refering to this new JSON policy
+#.  Run a new docker container with this new JSON policy
 
     .. code-block:: bash
 
-        docker run -dit --name app-protect -p 80:80 -v /home/ubuntu/policy-adv/nginx.conf:/etc/nginx/nginx.conf -v /home/ubuntu/policy-adv/policy_base.json:/etc/nginx/policy/policy_base.json -v /home/ubuntu/policy-adv/policy_mongo_linux_JSON.json:/etc/nginx/policy/policy_mongo_linux_JSON.json  app-protect:tc       
+        docker run --interactive --tty --rm --name app-protect -p 80:80 -v /home/ubuntu/arcadia-waf-policy/nginx.conf:/etc/nginx/nginx.conf -v /home/ubuntu/arcadia-waf-policy/policy_base.json:/etc/nginx/policy/policy_base.json -v /home/ubuntu/arcadia-waf-policy/policy_mongo_linux_JSON.json:/etc/nginx/policy/policy_mongo_linux_JSON.json  app-protect:latest
 
-#.  In the ``Jumphost``, open ``Edge Browser`` and connect to ``Arcadia NAP Docker`` bookmark
+#.  In the ``jump host``, open the browser and connect to ``Arcadia Links>Arcadia NAP Docker`` bookmark
 
 #.  Enter this URL with a XSS attack ``http://app-protect.arcadia-finance.io/?a=<script>``
 
 #.  You can see your new custom blocking page
 
-#.  Extra lab if you have time - modify this page in Gitlab and run a new docker. The policy is modified accordingly without modifying the ``./policy-adv/policy_base.json`` file.
+#.  Extra lab if you have time - modify this page in Gitlab and run a new docker container. The policy is modified accordingly without modifying the ``./arcadia-waf-policy/policy_base.json`` file.
 
 |
 
@@ -476,7 +475,7 @@ Steps:
 
         .. note:: Please have a quick look on this policy. You can notice several violations are enabled in order to cover the different OWASP categories
 
-    #.  Now, create a new ``nginx.conf`` in the ``policy_owasp_top10`` folder. Do not overwrite the existing ``/etc/nginx/nginx.conf`` file, we need it for the next labs.
+    #.  Now, create a new ``nginx.conf`` in the ``policy_owasp_top10`` folder.
 
         .. code-block:: bash
 
@@ -517,7 +516,7 @@ Steps:
                         resolver_timeout 5s;
                         client_max_body_size 0;
                         default_type text/html;
-                        proxy_pass http://k8s.arcadia-finance.io:30274$request_uri;
+                        proxy_pass http://k8s.arcadia-finance.io:30511$request_uri;
                     }
                 }
             }

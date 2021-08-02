@@ -3,19 +3,17 @@ Step 6 - Build your first NAP (NGINX App Protect) Docker image
 
 In this lab, we will build the NAP Docker image via command line.
 
-**Follow the step below to build the Docker image:**
+**Follow the steps below to build the Docker image:**
 
    #. SSH/vscode/webshell to the Docker App Protect + Docker repo VM
-   #. Change direcotry to ``cd /home/ubuntu/lab-files``
-   #. Run the command ``docker build --tag app-protect .`` <-- Be careful, there is a "." (dot) at the end of the command
+   #. Change directory to ``cd /home/ubuntu/lab-files``
+   #. Run the command ``docker build --tag app-protect .`` <-- Be careful, there is a "." (dot) at the end of the command (which is an alias for ``$PWD`` current directory)
 
-.. note:: By default, when you run the docker build command, it looks for a file named ``Dockerfile`` in the current direcotry. To target a diffrent file, pass -f flag.
+.. note:: By default, when you run the docker build command, it looks for a file named ``Dockerfile`` in the current directory. To target a different file, pass -f flag.
 
    #. Wait until you see the message: ``Successfully tagged app-protect:latest``
 
-.. note:: The signatures are provided by F5 with an RPM package. The best way to update the image is to build a new image and rfrom a new Dockerfile referring to this signature package (and change the image tag). We will use the Dockerfile below:
-
-.. code-block:: bash
+.. code-block:: Dockerfile
 
    #For CentOS 7
    FROM centos:7.4.1708
@@ -37,61 +35,51 @@ In this lab, we will build the NAP Docker image via command line.
       && rm -rf /var/cache/yum \
       && rm -rf /etc/ssl/nginx
 
-   # Forward request logs to Docker log collector
-   #RUN ln -sf /dev/stdout /var/log/nginx/access.log \
-   #    && ln -sf /dev/stderr /var/log/nginx/error.log
+   # Forward request logs to Docker log collector:
+   RUN ln -sf /dev/stdout /var/log/nginx/access.log \
+      && ln -sf /dev/stderr /var/log/nginx/error.log
 
-   # Copy configuration files
-   COPY nginx.conf log-default.json /etc/nginx/
-   COPY entrypoint.sh  ./
+   # Copy configuration files:
+   COPY nginx.conf custom_log_format.json /etc/nginx/
+   COPY entrypoint.sh  /root/
 
-   CMD ["sh", "/entrypoint.sh"]
-
-
-.. note:: You may notice one more package versus the previous Dockerfile in Step 3. I added the package installation ``app-protect-attack-signatures``
+   CMD ["sh", "/root/entrypoint.sh"]
 
 
-**Follow the steps below to build the new Docker image:**
 
-   #. SSH from jumphost commandline ``ssh ubuntu@10.1.1.12`` to Docker App Protect + Docker repo VM
-   #. Run the command ``docker build -t app-protect:20200316 -f Dockerfile-sig .`` <-- Be careful, there is a "." (dot) at the end of the command
-   #. Wait until you see the message: ``Successfully tagged app-protect:20200316``
+.. code-block:: entrypoint.sh
 
-.. note:: Please take time to understand what we ran. You may notice 2 changes. We ran the build with a new Dockerfile ``Dockerfile-sig`` and with a new tag ``20200316`` (date of the signature package when I built this lab). You can put any tag you want, for instance the date of today. Because we don't know the date of the latest Attack Signature package.
+   #!/usr/bin/env bash
+
+   /bin/su -s /bin/bash -c '/opt/app_protect/bin/bd_agent &' nginx
+   /bin/su -s /bin/bash -c "/usr/share/ts/bin/bd-socket-plugin tmm_count 4 proc_cpuinfo_cpu_mhz 2000000 total_xml_memory 307200000 total_umu_max_size 3129344 sys_max_account_id 1024 no_static_config 2>&1 >> /var/log/app_protect/bd-socket-plugin.log &" nginx
+   /usr/sbin/nginx -g 'daemon off;'
 
 
-**Destroy the previous running NAP container and run a new one based on the new image (tag 20200316)**
 
-   1. Check if the new app-protect Docker image is available locally by running ``docker images``. You will notice the new image with a tag of ``20200316``.
+.. note:: Please take time to understand what we ran.
 
-      .. image:: ../pictures/lab2/docker_images.png
-         :align: center
 
-|
 
-   2. Destroy the existing and running NAP container ``docker rm -f app-protect``
-   3. Run a new container with this image ``docker run -dit --name app-protect -p 80:80 -v /home/ubuntu/nginx.conf:/etc/nginx/nginx.conf app-protect:20200316``
+   #. Create a container with the new image ``docker run --interactive --tty --rm --name app-protect -p 80:80 --volume /home/ubuntu/lab-files/nginx.conf:/etc/nginx/nginx.conf app-protect:latest``
 
-      .. warning :: If you decided to change the tag ``20200316`` by another tag, change your command line accordingly
+.. note:: The container takes about 45 seconds to start, wait for a message "event": "waf_connected" before continuing.
 
-   4. Check that the Docker container is running ``docker ps``
+   #. We will leave this terminal running while we perform some tests. When debugging a container, it is often better to not run it detached (-d command) so we can see if it fails immediately. Many times when a container exists immediately it is because of a missing file.
 
-      .. image:: ../pictures/lab2/docker_run.png
-         :align: center
+.. note:: If you choose to run it detached, you can follow the logs with ``docker logs --follow app-protect``
 
-|
-
-   5. Check the signature package date included in this image (by default) ``docker logs app-protect -f`` wait while the docker image boots and you would see the log below.
+   #. Note the signature package date in the output logs.
 
 .. code-block:: bash
       
-      2021/02/16 14:40:52 [notice] 13#13: APP_PROTECT { "event": "configuration_load_success", "software_version": "3.332.0", "user_signatures_packages":[],"attack_signatures_package":{"revision_datetime":"2019-07-16T12:21:31Z"},"completed_successfully":true,"threat_campaigns_package":{}}
+      2021/08/02 14:15:52 [notice] 13#13: APP_PROTECT { "event": "configuration_load_success", "software_version": "3.583.0", "user_signatures_packages":[],"attack_signatures_package":{"revision_datetime":"2021-07-13T09:45:23Z","version":"2021.07.13"},"completed_successfully":true}
 
 .. note:: Congrats, you are running a new version of NAP with an updated signature package.
 
 **Video of this lab (force HD 1080p in the video settings)**
 
-.. note :: You can notice some differences between the video and the lab. When I did the video, the dockerfile was different. But the concept remains the same.
+.. note :: You can notice some differences between the video and the lab. When I did the video, the Dockerfile was different. But the concept remains the same.
 
 .. raw:: html
 
