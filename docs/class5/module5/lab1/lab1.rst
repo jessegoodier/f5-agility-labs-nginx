@@ -6,14 +6,14 @@ Context
 
 As a reminder, in ``Steps 9 and 10``, we deployed NAP in CentOS.
 
-#. Step 9 manually
-#. Step 10 via CI/CD pipelines
+    #. Step 9 manually
+    #. Step 10 via CI/CD pipelines
 
 The Arcadia web application has several APIs in order to:
 
-#. Buy stocks
-#. Sell stocks
-#. Transfer money to friends
+    #. Buy stocks
+    #. Sell stocks
+    #. Transfer money to friends
 
 In order to protect these APIs, we will push (or pull) an ``OpenAPI specification file`` into NAP so that it can build the WAF policy from this file.
 
@@ -27,7 +27,7 @@ You can find the ``Arcadia Application OAS3`` file here : https://app.swaggerhub
 Steps for the lab
 *****************
 
-    #. SSH from Jumpbox commandline ``ssh centos@10.1.1.10`` (or WebSSH) to ``App Protect in CentOS``
+    #. SSH to the centos-vm
     #. Go to ``cd /etc/nginx``
     #. ``ls`` and check the files created during the previous CI/CD pipeline job
 

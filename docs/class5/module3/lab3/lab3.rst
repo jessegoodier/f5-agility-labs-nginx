@@ -1,4 +1,4 @@
-Step 9 - Customize the WAF policy
+Step 8 - Customize the WAF policy
 #################################
 
 So far, we have been using the default NGINX App Protect policy. As you notices in the previous lab (Step 5), the ``nginx.conf`` does not file any reference to a WAF policy. It uses the default WAF policy.
@@ -10,8 +10,10 @@ Use a custom WAF policy and assign it per location
 
 Steps:
 
-    #.  SSH to the Docker App Protect + Docker repo VM (feel free to use vscode on jump host if you find it easier to use than vim)
+    #.  From the docker vm, perform the below steps. We suggest using vscode for the below excercise, but feel free to use the tool of your choice.
     #.  In the ``/home/ubuntu/lab-files`` directory, create a new folder ``arcadia-waf-policy``
+
+        .. note:: The steps below assume you are using a terminal. If using vscode, you will not need to use ``vi``
 
         .. code-block:: bash
 
@@ -21,7 +23,7 @@ Steps:
         
         .. code-block:: bash
 
-            vi ./arcadia-waf-policy/policy_base.json
+            vi /home/ubuntu/lab-files/arcadia-waf-policy/policy_base.json
 
         .. code-block:: js
            :caption: policy_base.json
@@ -44,7 +46,7 @@ Steps:
 
         .. code-block:: bash
 
-            vi ./arcadia-waf-policy/policy_mongo_linux_JSON.json
+            vi /home/ubuntu/lab-files/arcadia-waf-policy/policy_mongo_linux_JSON.json
 
         .. code-block:: js
            :caption: policy_mongo_linux_JSON.json
@@ -162,7 +164,7 @@ Steps:
 
         .. code-block:: bash
 
-            vi ./arcadia-waf-policy/nginx.conf
+            vi /home/ubuntu/lab-files/arcadia-waf-policy/nginx.conf
 
         .. code-block:: nginx
             :emphasize-lines: 32,40,48,56
@@ -191,7 +193,7 @@ Steps:
 
                     app_protect_enable on;
                     app_protect_security_log_enable on;
-                    app_protect_security_log "/etc/nginx/log-default.json" syslog:server=10.1.20.11:5144;
+                    app_protect_security_log "/etc/app_protect/conf/log_default.json" syslog:server=10.1.20.11:5144;
 
                     location / {
                         resolver 10.1.1.8:5353;
@@ -199,7 +201,7 @@ Steps:
                         client_max_body_size 0;
                         default_type text/html;
                         app_protect_policy_file "/etc/nginx/policy/policy_base.json";
-                        proxy_pass http://k8s.arcadia-finance.io:30511$request_uri;
+                        proxy_pass http://k8s.arcadia-finance.io:30585$request_uri;
                     }
                     location /files {
                         resolver 10.1.1.8:5353;
@@ -207,7 +209,7 @@ Steps:
                         client_max_body_size 0;
                         default_type text/html;
                         app_protect_policy_file "/etc/nginx/policy/policy_mongo_linux_JSON.json";
-                        proxy_pass http://k8s.arcadia-finance.io:30511$request_uri;
+                        proxy_pass http://k8s.arcadia-finance.io:30584$request_uri;
                     }
                     location /api {
                         resolver 10.1.1.8:5353;
@@ -215,7 +217,7 @@ Steps:
                         client_max_body_size 0;
                         default_type text/html;
                         app_protect_policy_file "/etc/nginx/policy/policy_mongo_linux_JSON.json";
-                        proxy_pass http://k8s.arcadia-finance.io:30511$request_uri;
+                        proxy_pass http://k8s.arcadia-finance.io:30586$request_uri;
                     }
                     location /app3 {
                         resolver 10.1.1.8:5353;
@@ -223,7 +225,7 @@ Steps:
                         client_max_body_size 0;
                         default_type text/html;
                         app_protect_policy_file "/etc/nginx/policy/policy_mongo_linux_JSON.json";
-                        proxy_pass http://k8s.arcadia-finance.io:30511$request_uri;
+                        proxy_pass http://k8s.arcadia-finance.io:30587$request_uri;
                     }
 
                 }
@@ -238,14 +240,15 @@ Steps:
                 -v /home/ubuntu/lab-files/arcadia-waf-policy/nginx.conf:/etc/nginx/nginx.conf \
                 -v /home/ubuntu/lab-files/arcadia-waf-policy/policy_base.json:/etc/nginx/policy/policy_base.json \
                 -v /home/ubuntu/lab-files/arcadia-waf-policy/policy_mongo_linux_JSON.json:/etc/nginx/policy/policy_mongo_linux_JSON.json \
-                app-protect:latest
+                app-protect:04-aug-2021-tc
 
     #.  Wait for the container to start, you should see: ``APP_PROTECT { "event": "waf_connected"`` in the output.
 
-    #.  RDP to the Jumhost as ``user:user`` and click on bookmark ``Arcadia Links>Arcadia NAP Docker`` Click Login and use matt:ilovef5
+    #.  From the jum host click on the ``Arcadia Links>Arcadia NAP Docker`` bookmark. Click Login and use matt:ilovef5
 
         .. image:: ../pictures/lab5/arcadia-adv.png
            :align: center
+           :alt: advanced policy
 
 
 .. note:: From this point on, NAP is using a different WAF policy based on the requested URI:
@@ -272,7 +275,7 @@ In this lab, we will create a ``custom blocking page`` and host this page in Git
 
 As a reminder, this is the base policy we created:
 
-    .. code-block:: js
+.. code-block:: js
 
             {
                 "name": "policy_name",
@@ -296,6 +299,7 @@ Steps :
     .. image:: ../pictures/lab5/gitlab-1.png
        :align: center
        :scale: 50%
+       :alt: gitlab1
 
 
 
@@ -314,23 +318,17 @@ Steps :
 
 #.  This is a custom Blocking Response config page. We will refer to it into the ``policy_base.json``
 
-#.  SSH to ``Docker App Protect + Docker repo`` VM
-
-#.  Delete the running docker
+#.  From the Docker VM, delete the running container with ``<ctrl-c>`` or
 
     .. code-block:: bash
 
-            <ctrl-c> 
-            or
             docker rm -f app-protect
 
-#.  Modify the base policy created previously
+#.  Replace the base policy per the code block below.
 
     .. code-block:: bash
 
-       vi ./arcadia-waf-policy/policy_base.json
-
-#.  Modify the JSON as below
+       vi /home/ubuntu/lab-files/arcadia-waf-policy/policy_base.json
 
     .. code-block:: js
 
@@ -354,7 +352,7 @@ Steps :
 
 #.  In the ``jump host``, open the browser and connect to ``Arcadia Links>Arcadia NAP Docker`` bookmark
 
-#.  Enter this URL with a XSS attack ``http://app-protect.arcadia-finance.io/?a=<script>``
+#.  Add this to the end of the URL to simulate an XSS attack ``?a=<script>``
 
 #.  You can see your new custom blocking page
 
@@ -365,13 +363,13 @@ Steps :
 Create an OWASP Top 10 policy for NAP
 *************************************
 
-So far, we created basic and custom policy (per location) and used external references. Now it is time to deploy an OWASP Top 10 policy.
-The policy not 100% OWASP Top 10 as several attacks can't be blocked just with a negative policy, we will cover a big part of OWASP Top 10.
+So far, we created basic and custom policies (per location) and used external references. Now it is time to deploy an OWASP Top 10 policy.
+The policy does not cover 100% OWASP Top 10 as several attacks can't be blocked just with a negative policy, but we will cover most of the OWASP Top 10.
 
 Steps:
 
     #.  SSH to the Docker App Protect + Docker repo VM
-    #.  In the ``/home/ubuntu`` directory, create a new folder ``policy_owasp_top10``
+    #.  In the ``/home/ubuntu/lab-files`` directory, create a new folder ``policy_owasp_top10``
 
         .. code-block:: bash
 
@@ -381,7 +379,7 @@ Steps:
         
         .. code-block:: bash
 
-            vi ./policy_owasp_top10/policy_owasp_top10.json
+            /home/ubuntu/lab-files/policy_owasp_top10/policy_owasp_top10.json
 
         .. code-block:: js
            :caption: policy_owasp_top10.json
@@ -479,7 +477,7 @@ Steps:
 
         .. code-block:: bash
 
-            vi ./policy_owasp_top10/nginx.conf
+            /home/ubuntu/lab-files/policy_owasp_top10/nginx.conf
 
         .. code-block:: nginx
            :caption: nginx.conf
@@ -509,7 +507,7 @@ Steps:
                     app_protect_enable on;
                     app_protect_security_log_enable on;
                     app_protect_policy_file "/etc/nginx/policy/policy_owasp_top10.json";
-                    app_protect_security_log "/etc/nginx/log-default.json" syslog:server=10.1.20.6:5144;
+                    app_protect_security_log "/etc/app_protect/conf/log_default.json" syslog:server=10.1.20.6:5144;
 
                     location / {
                         resolver 10.1.1.8:5353;
@@ -528,13 +526,10 @@ Steps:
         .. code-block:: bash
 
             docker rm -f app-protect
-            docker run -dit --name app-protect -p 80:80 -v /home/ubuntu/policy_owasp_top10/nginx.conf:/etc/nginx/nginx.conf -v /home/ubuntu/policy_owasp_top10/policy_owasp_top10.json:/etc/nginx/policy/policy_owasp_top10.json app-protect:20200316
-
-    #.  Check that the ``app-protect:20200316`` container is running 
-
-        .. code-block:: bash
-
-            docker ps
+            docker run -it --name app-protect -p 80:80 \
+                -v /home/ubuntu/lab-files/policy_owasp_top10/nginx.conf:/etc/nginx/nginx.conf \
+                -v /home/ubuntu/lab-files/policy_owasp_top10/policy_owasp_top10.json:/etc/nginx/policy/policy_owasp_top10.json \
+                app-protect:04-aug-2021-tc
 
         .. image:: ../pictures/lab5/docker-ps-owasp.png
            :align: center

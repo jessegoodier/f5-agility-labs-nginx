@@ -1,89 +1,68 @@
-Step 1 - Deploy and publish Arcadia Finance application in Kubernetes
+Using the UDF Tools
 #####################################################################
 
-It's time to deploy Arcadia Finance application :)
+This lab has a multiple tools provided. There are serveral ways to accomplish each task, use whichever tool you prefer. There is a video walk through at the bottom of this page, as well as many others in the guide.
 
-**Deploy Arcadia Application with kubectl command**
-
-With Kubernetes, there are several ways to deploy containers (pods). One way is to use ``kubectl`` command with a YAML manifest file.
-I prepared this YAML file below (this is a portion of it below showing the main app container). You can have a look, and see it will deploy containers from my Gitlab.com repo.
-
-.. code-block:: YAML
-
-    apiVersion: v1
-    kind: Service
-    metadata:
-    name: main
-    namespace: default
-    labels:
-        app: main
-    spec:
-    type: NodePort
-    ports:
-    - name: main-80
-        nodePort: 30511
-        port: 80
-        protocol: TCP
-        targetPort: 80
-    selector:
-        app: main
-    ---
-    apiVersion: apps/v1
-    kind: Deployment
-    metadata:
-    name: main
-    namespace: default
-    labels:
-        app: main
-        version: v1
-    spec:
-    replicas: 1
-    selector:
-        matchLabels:
-        app: main
-        version: v1
-    template:
-        metadata:
-        labels:
-            app: main
-            version: v1
-        spec:
-        containers:
-        - env:
-            - name: service_name
-            value: main
-            image: registry.gitlab.com/arcadia-application/main-app/mainapp:latest
-            imagePullPolicy: IfNotPresent
-            name: main
-            ports:
-            - containerPort: 80
-            protocol: TCP
-    ---
-
-.. note:: This file contains all the deployments for the entire Arcadia appication. 
-
-**Steps :**
-
-    #. RDP to the jumphost as ``user:user`` credentials
-    #. SSH to cicd VM. You can use vscode, Windows terminal, or UDF Web shell the command is ``ssh ubuntu@cicd`` (if you use use Web SSH, make sure to ``cd /home/ubuntu/``)
-    #. Run this command ``kubectl apply -f /home/ubuntu/lab-files/arcadia-manifests/arcadia-deployments.yaml``
-    #. Open Firefox Browser
-    #. Open Kubernetes Dashboard bookmark (if not already opened)
-    #. Click ``skip`` on the logon page
-    #. You should see the  and the pods
+.. note:: The videos may vary slightly from the lab guide- as it is much easier to update the guide than make new videos when there are minor changes. When in doubt, follow the lab guide. And please reach out to the authors if anything is not clear.
 
 
-.. image:: ../pictures/lab3/arcadia-deployments.png
+**RDP to the Win10 Hump Host**
+
+Find the Win10 VM on the right-hand side of the UDF Systems.
+
+.. image:: ../pictures/udf-jumphost.png
+   :alt: jumphost resolutions
    :align: center
+   :scale: 90%
+
+We recommend a resolution slightly smaller than your desktop. 
+
+.. note:: You can edit the .rdp file that is downloaded and customize your settings. The file may automatically download to a temp location, depending on your browser settings.
+
+.. note:: The default username is ``Administrator``. You must change it to ``user`` with the password ``user``
+
+**Direct Links to Web Tools**
+
+The jump host can have a little lag, though it generally will make finding all the lab resources easier. 
+
+As an alternative, you can use the direct links to the tools that have a browser UI. These links are under the VM you are using. For example, the ELK web dashboard is availible by clicking the ``Access`` link to the right of it.
+
+.. image:: ../pictures/udf-elk-link.png
+   :alt: ELK Link
+   :align: center
+   :scale: 90%
+
+**Use Your Own SSH Client**
+
+Optional: If you have a public key for SSH, we recommend adding it to UDF. Instructions for that are here (find: SSH Access): `UDF Guide
+<https://help.udf.f5.com/en/articles/3832340-f5-training-course-interface#:~:text=access%20and%20when.-,SSH%20Access,-Many%20courses%20leverage>`_.
+
+Once you add it, you can use the direct SSH access link under each VM. Depending on your browser's settings, the link may open your SSH client automatically. Otherwise copy the entire ssh command and paste into your client. On Windows, we recommend `Windows Terminal <https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701?activetab=pivot:overviewtab>`_. Note that vscode does not work remotely, you must use the jump host if you prefer vscode.
+
+.. note:: Hostnames have been configured on all systems. Once you have SSHed into the cicd server (in the first excercise), you can ``ssh docker`` or ``ssh centos`` to get to the other VMs.
+
+.. image:: ../pictures/udf-ssh-access.png
+   :alt: Windows Terminal
+   :align: center
+   :scale: 80%
+
+**Using the Win10 Jump Host**
+
+Once on the jump host, you can quickly access the VMs from either vscode or Windows Terminal by right-clicking the icon on the taskbar.
+
+.. note:: All the web applications that require passwords are saved in the browser, just click in the fields and they should populate.
+
+.. image:: ../pictures/udf-windows-terminal.png
+   :alt: Windows Terminal
+   :align: center
+   :scale: 80%
+
+-------------------------------
 
 
-.. warning:: Arcadia Application is running but not yet available for the customers. We need to create a Kubernetes service to expose it.
+.. image:: ../pictures/udf-vscode.png
+   :alt: vscode
+   :align: center
+   :scale: 80%
 
-**Video of this lab (force HD 1080p in the video settings)**
-
-.. raw:: html
-
-    <div style="text-align: center; margin-bottom: 2em;">
-    <iframe width="1120" height="630" src="https://www.youtube.com/embed/Qb5YyQrc7mk" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-    </div>
-
+.. note:: The ``Pinned`` items in the vscode menu will bring you directly to the files intended for that system.
